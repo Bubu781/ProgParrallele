@@ -18,5 +18,6 @@
 image_t *image_new_open(const char *fname);
 int image_save_ascii(const image_t *self, const char *fname);
 int image_save_binary(const image_t *self, const char *fname);
+int image_save(const image_t *self, const char *fname, int binary_encoding);
 
 #endif

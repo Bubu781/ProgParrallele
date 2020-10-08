@@ -1,5 +1,6 @@
 #include "pixel.h"
 #include "utils.h"
+#include <math.h>
 
 /* Convert color types to Grayscale 8 */
 
