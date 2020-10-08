@@ -1,0 +1,10 @@
+Q2 (1pt): Compilez les deux programmes. Relevez les latences de ces deux programmes.
+special est environ 4 fois plus rapide
+
+Q3 (2pts): Tentez d’expliquer la différence entre ces deux valeurs.
+la différence est due au fait que dans le "special" les variables sont séparés d'au moins 128 octets, donc ça nous permet d'éviter à tout les coups les incohérences, on gagne donc du temps car les coeurs n'ont pas besoin d'aller chercher les variables dans la RAM, elles se contentent de les lire dans le cache.
+
+Q4 (1pts): Selon vous, quelles sont les avantages et inconvénientsde chacun des deux programmes?
+avantages du normal : techniquement plus optimisé, mais plus long dans cette situation car variables proches
+avantages du spécial : techniquement moins optimisé, mais dans cette situation(lorsqu'il y a peu de variables) tourne plus vite. Mais utilise plus de mémoire
+

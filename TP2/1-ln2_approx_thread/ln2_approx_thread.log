@@ -1,0 +1,13 @@
+Avec 1 threads:
+real 2.13
+user 14.51
+sys 0.00
+Avec 2 threads:
+real 2.10
+user 14.98
+sys 0.00
+Avec 3 threads:
+Command terminated by signal 2
+real 0.41
+user 3.07
+sys 0.00
