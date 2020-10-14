@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "image_lib.h"
+#include "../inc/image_lib.h"
 
 
 void test_image_gradient(const char *fname)

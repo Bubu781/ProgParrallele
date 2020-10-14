@@ -1,6 +1,6 @@
-#include "image_gradient.h"
-#include "utils.h"
-#include "pixel.h"
+#include "../inc/image_gradient.h"
+#include "../inc/utils.h"
+#include "../inc/pixel.h"
 #include <math.h>
 #include <assert.h>
 
@@ -26,16 +26,15 @@ void image_gradient(image_t *self, image_t *out)
     assert(out->type == IMAGE_RGB_888);
     assert(self->type == IMAGE_GRAYSCALE_8);
 
-    int x, y;
-    uint8_t c;
-    int kx, ky;
-    float gx, gy, mag, angle;
-    float h, s, v;
-    rgb_t rgb;
-    //TODO: paraleliser
     int tid, nbthreads;
     #pragma omp parallel private(tid)
     {
+        int x, y;
+        uint8_t c;
+        int kx, ky;
+        float gx, gy, mag, angle;
+        float h, s, v;
+        rgb_t rgb;
         tid = omp_get_thread_num();
         nbthreads = omp_get_num_threads();
         /* For all pixels of the input image */
@@ -43,6 +42,7 @@ void image_gradient(image_t *self, image_t *out)
         {
             for (x = 0; x < self->width - 2; ++x)
             {
+
                 /* Compute gradient in x and y direction: */
                 gx = 0;
                 gy = 0;

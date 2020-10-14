@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "image_file_io.h"
-#include "utils.h"
+#include "../inc/image_file_io.h"
+#include "../inc/utils.h"
 
 
 /**

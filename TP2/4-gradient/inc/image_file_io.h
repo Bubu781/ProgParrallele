@@ -1,7 +1,7 @@
 #ifndef IMAGE_FILE_IO_H
 #define IMAGE_FILE_IO_H
 
-#include <image.h>
+#include "image.h"
 
 /**
  * Read from / save to PNM format files.

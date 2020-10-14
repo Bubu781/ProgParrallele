@@ -7,7 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "pixel.h"
+#include "../inc/pixel.h"
 
 /*
         switch(self->type)
