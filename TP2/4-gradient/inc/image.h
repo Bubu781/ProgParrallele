@@ -40,11 +40,11 @@ typedef enum
 #define FOR_X(self, x_index) \
     for (int (x_index) = 0; (x_index) < self->width; ++(x_index))
 
-#define FOR_Y(self, y_index) \
-    for (int (y_index) = 0; (y_index) < self->height; ++(y_index))
+#define FOR_Y(self, y_index, thread_id, number_threads) \
+    for (int (y_index) = thread_id; (y_index) < self->height; (y_index)+=number_threads)
 
-#define FOR_YX(self, y_index, x_index) \
-    FOR_Y(self, y_index) \
+#define FOR_YX(self, y_index, x_index, thread_id, number_threads) \
+    FOR_Y(self, y_index, thread_id, number_threads) \
         FOR_X(self, x_index) 
 
 

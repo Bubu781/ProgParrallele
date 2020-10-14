@@ -96,33 +96,40 @@ image_t *image_new_open(const char *fname)
     if (ascii_encoding) 
     {
         //DEBUG("Reading ASCII-encoded pixel data");
-        FOR_YX(self, y, x)
+        //TODO: parralleliser
+        int tid, nbthreads;
+        #pragma omp parallel private(tid)
         {
-            int rc;
-            uint32_t v, r, g, b;
-            color_t c;
-
-            switch(self->type)
+            tid = omp_get_thread_num();
+            nbthreads = omp_get_num_threads();
+            FOR_YX(self, y, x, tid, nbthreads)
             {
-            case IMAGE_BITMAP:
-                rc = fscanf(fp, "%d", &v);
-                self->setpixel(self, x, y, (color_t){.bit = LIMIT(v, 0, 1)});
-                break;
-            case IMAGE_GRAYSCALE_8:
-                rc = fscanf(fp, "%d", &v);
-                self->setpixel(self, x, y, (color_t){.gs8 = LIMIT(v, 0, 255)});
-                break;
-            case IMAGE_GRAYSCALE_16:
-                rc = fscanf(fp, "%d", &v);
-                self->setpixel(self, x, y, (color_t){.gs16 = LIMIT(v, 0, 65535)});
-                break;
-            case IMAGE_RGB_888:
-                rc = fscanf(fp, "%d%d%d", &r, &g, &b);
-                printf("%d %d %d\n", r, g, b);
-                self->setpixel(self, x, y, (color_t){.rgb.r = LIMIT(r, 0, 255), .rgb.g = LIMIT(g, 0, 255), .rgb.b = LIMIT(b, 0, 255)});
-                break;
-            default:
-                DIE("Not supported");
+                int rc;
+                uint32_t v, r, g, b;
+                color_t c;
+
+                switch(self->type)
+                {
+                case IMAGE_BITMAP:
+                    rc = fscanf(fp, "%d", &v);
+                    self->setpixel(self, x, y, (color_t){.bit = LIMIT(v, 0, 1)});
+                    break;
+                case IMAGE_GRAYSCALE_8:
+                    rc = fscanf(fp, "%d", &v);
+                    self->setpixel(self, x, y, (color_t){.gs8 = LIMIT(v, 0, 255)});
+                    break;
+                case IMAGE_GRAYSCALE_16:
+                    rc = fscanf(fp, "%d", &v);
+                    self->setpixel(self, x, y, (color_t){.gs16 = LIMIT(v, 0, 65535)});
+                    break;
+                case IMAGE_RGB_888:
+                    rc = fscanf(fp, "%d%d%d", &r, &g, &b);
+                    printf("%d %d %d\n", r, g, b);
+                    self->setpixel(self, x, y, (color_t){.rgb.r = LIMIT(r, 0, 255), .rgb.g = LIMIT(g, 0, 255), .rgb.b = LIMIT(b, 0, 255)});
+                    break;
+                default:
+                    DIE("Not supported");
+                }
             }
         }
     }
@@ -264,7 +271,8 @@ int image_save(const image_t *self, const char *fname, int binary_encoding)
     }
     else
     {
-        FOR_YX(self, y, x)
+        //TODO: paralleliser
+        FOR_YX(self, y, x, 0, 1)
         {
             color_t c;
             c = self->getpixel(self, x, y);
