@@ -1,6 +1,6 @@
 
 # ----------------------------------------------------------------------------
-# Déclaration de variables
+# Dï¿½claration de variables
 # ----------------------------------------------------------------------------
 
 # la commande $(wildcard src/*.c) nous renvoie la liste des fichiers '*.c' dans le dossier source
@@ -12,55 +12,56 @@ BIN := sine_sync
 LOG := $(BIN).log
 PGM := *.pgm
 TXT := *.txt
+OUT := *.out
 
-# Nombre de threads à utiliser 
+# Nombre de threads ï¿½ utiliser 
 THREAD_NUM = 1 2 3 4 5 6 7 8 9 10
 
-# Notez ici les paramètres de compilation
+# Notez ici les paramï¿½tres de compilation
 CFLAGS := -O0 -g 	# pas d'optimisation, ajouter les symboles de debug
 CFLAGS += -Iinc/ 	# headers .h dans inc/
 CFLAGS += -Wall		# afficher tous les warnings
 
-# Notez ici les paramètres de liaison (librairies nécessaires)
+# Notez ici les paramï¿½tres de liaison (librairies nï¿½cessaires)
 LDFLAGS := -lm -lpthread	
 
-# Commandes utilisées pour compiler & linker
+# Commandes utilisï¿½es pour compiler & linker
 CC := gcc
 LD := gcc
 
 # ----------------------------------------------------------------------------
-# Règles de compilation
+# Rï¿½gles de compilation
 # ----------------------------------------------------------------------------
 
-# Structure générale d'une règle: pour construire 'cible', il faut d'abord
-# construire ou récupérer plusieurs prérequis, puis appliquer une ou plusieurs 
+# Structure gï¿½nï¿½rale d'une rï¿½gle: pour construire 'cible', il faut d'abord
+# construire ou rï¿½cupï¿½rer plusieurs prï¿½requis, puis appliquer une ou plusieurs 
 # commandes.
 #
-# cible: dépendance1 dépendance2 ...
+# cible: dï¿½pendance1 dï¿½pendance2 ...
 # 	commande1 (ligne commence par TAB ; attention pas d'espace!)
 #	commande2
 # 
 
 # Quelques variables automatiques dans make:
 # % : pattern matching
-# $@ : la cible de la règle en cours
-# $^ : toutes les dépendances listées
-# $< : la 1° dépendance listée
+# $@ : la cible de la rï¿½gle en cours
+# $^ : toutes les dï¿½pendances listï¿½es
+# $< : la 1ï¿½ dï¿½pendance listï¿½e
 
-# Règle de compilation pour le programme principal:
+# Rï¿½gle de compilation pour le programme principal:
 $(BIN): $(SRC)
 	$(CC) $(CFLAGS) -o $(BIN) $(SRC) $(LDFLAGS)
 
-# pour nettoyer: supprimer les fichiers générés
+# pour nettoyer: supprimer les fichiers gï¿½nï¿½rï¿½s
 clean:
-	rm -f $(OBJ) $(BIN) $(LOG) $(PGM) $(TXT)
+	rm -f $(OBJ) $(BIN) $(LOG) $(PGM) $(TXT) $(OUT)
   
-# pour mesurer le temps en variant le nombre de threads num de 1 à 8
+# pour mesurer le temps en variant le nombre de threads num de 1 ï¿½ 8
 # for num in [1 2 3 4 5 6 7 8]:
 #	time -a -o ./tutorial.log ./tutorial num
 time: $(BIN)
 	rm -f $(LOG)
 	$(foreach num, $(THREAD_NUM), echo "Avec $(num) threads:" >> $(LOG) && time -p -a -o $(LOG) ./$(BIN) $(num);)
 
-# on indique que les cibles des règles 'clean' et 'time' ne sont pas des fichiers
+# on indique que les cibles des rï¿½gles 'clean' et 'time' ne sont pas des fichiers
 .PHONY: clean time
