@@ -8,7 +8,6 @@
 #endif
 
 #define PADDING 64
-
 int main(int argc, char **argv) 
 {
     volatile int a[PADDING];
@@ -34,11 +33,13 @@ int main(int argc, char **argv)
                 #pragma omp section
                 {
                     a[0] = 1;
+                    asm volatile ("mfence" : : : "memory");
                     x[0] = b[0];
                 }
                 #pragma omp section
                 {
                     b[0] = 1;
+                    asm volatile ("mfence" : : : "memory");
                     y[0] = a[0];
                 }
             }
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
 
     for (int vx = 0; vx < 2; vx++) {
         for (int vy = 0; vy < 2; vy++) {
-            printf("(x = %d, y = %d) : %9d times (%.3f%%)\n", vx, vy, results[vx + 2*vy], (100.0d*results[vx + 2*vy])/N);
+            printf("(x = %d, y = %d) : %9d times (%.3f%%)\n", vx, vy, results[vx + 2*vy], (100.0*results[vx + 2*vy])/N);
         }
     }
         
