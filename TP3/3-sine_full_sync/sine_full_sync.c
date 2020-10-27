@@ -3,6 +3,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
+#include <semaphore.h>
 
 #define N_MAX 10000000LL
 #define PI 3.14159265
@@ -11,6 +12,9 @@ typedef struct {
   int thread_id;
 } thread_args_t;
 
+// Création du tableau de sémaphore
+sem_t semaphore_write[3];
+sem_t semaphore_produce[3];
 int sine_value[3];
 
 void *sine_producers (void *thread_arg)
@@ -23,7 +27,10 @@ void *sine_producers (void *thread_arg)
     for (phase = 0; phase < N_MAX; ++phase)
     {
         x = 40 * 0.001 * phase + my_args->thread_id;
+
+        sem_wait(&semaphore_write[my_args->thread_id%3]);
         sine_value[my_args->thread_id%3] = (int)(amplitude * sin(x));
+        sem_post(&semaphore_produce[my_args->thread_id%3]);
     }
     
     return NULL;
@@ -45,7 +52,9 @@ void *sine_writers (void *thread_arg)
     
     for (nb_write = 0; nb_write < N_MAX; ++nb_write)
     {
+        sem_wait(&semaphore_produce[my_args->thread_id%3]);
         fprintf(file, "%d\t%d\n", nb_write, sine_value[my_args->thread_id%3]);
+        sem_post(&semaphore_write[my_args->thread_id%3]);
     }
     
     fclose(file);
@@ -62,7 +71,14 @@ int main (int argc, char **argv)
     void *thread_return;
     
     n_threads = 6;
-    
+
+        // Initialisation des sémaphore
+    for (int i = 0 ; i < 3 ; i++)
+    {
+        sem_init(&semaphore_write[i], PTHREAD_PROCESS_SHARED, 0);
+        sem_init(&semaphore_produce[i], PTHREAD_PROCESS_SHARED, 1);
+    }
+
     my_threads = calloc(n_threads, sizeof(pthread_t));
     my_args = calloc(n_threads, sizeof(thread_args_t));
     
@@ -82,6 +98,11 @@ int main (int argc, char **argv)
             printf("pthread_join ERROR !!! (%d)\n", rc);
     }
     
+    for (int i = 0 ; i < 3 ; i++)
+    {	
+        sem_destroy(&semaphore_write[i]);
+	    sem_destroy(&semaphore_produce[i]);
+    }
     free (my_threads);
 
     return (0);
