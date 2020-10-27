@@ -9,7 +9,7 @@
 int sine_value = 0;
 omp_lock_t locker1;
 omp_lock_t locker2;
-void sine_producer (int tid)
+void sine_producer ()
 {
     int phase = 0;
     int amplitude = 10000;
@@ -25,7 +25,7 @@ void sine_producer (int tid)
     }
 }
 
-void sine_writer (int tid)
+void sine_writer ()
 {
     int nb_write = 0;
     FILE *file = NULL;
@@ -49,8 +49,6 @@ void sine_writer (int tid)
 int main (int argc, char **argv)
 {
     int n_threads;
-    int rc;
-    void *thread_return;
     int tid;
     n_threads = 2;
     omp_init_lock(&locker2);
@@ -58,9 +56,8 @@ int main (int argc, char **argv)
     omp_set_lock(&locker2);
     #pragma omp parallel private(tid)
     {
-        tid = omp_get_thread_num();
-        if(tid==0) sine_writer(tid);
-        if(tid==1) sine_producer(tid);
+        if(omp_get_thread_num()==0) sine_writer();
+        if(omp_get_thread_num()==1) sine_producer();
     }
     omp_destroy_lock(&locker1);
     omp_destroy_lock(&locker2);
