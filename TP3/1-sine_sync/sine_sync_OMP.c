@@ -7,7 +7,8 @@
 #define PI 3.14159265
 
 int sine_value = 0;
-int actual = 0;
+omp_lock_t locker1;
+omp_lock_t locker2;
 void sine_producer (int tid)
 {
     int phase = 0;
@@ -18,9 +19,9 @@ void sine_producer (int tid)
     {
         x = 0.04 * phase;
         val = (int)(amplitude * sin(x));
-        while(actual == tid); 
+        omp_set_lock(&locker1);
         sine_value = val;
-        actual = tid;
+        omp_unset_lock(&locker2);
     }
 }
 
@@ -36,9 +37,9 @@ void sine_writer (int tid)
     
     for (nb_write = 0; nb_write < N_MAX; ++nb_write)
     {
-        while(actual == tid);
+        omp_set_lock(&locker2);
         fprintf(file, "%d\t%d\n", nb_write, sine_value);
-        actual = tid;
+        omp_unset_lock(&locker1);
     }
     
     fclose(file);
@@ -52,12 +53,16 @@ int main (int argc, char **argv)
     void *thread_return;
     int tid;
     n_threads = 2;
+    omp_init_lock(&locker2);
+    omp_init_lock(&locker1);
+    omp_set_lock(&locker2);
     #pragma omp parallel private(tid)
     {
         tid = omp_get_thread_num();
         if(tid==0) sine_writer(tid);
         if(tid==1) sine_producer(tid);
     }
-
+    omp_destroy_lock(&locker1);
+    omp_destroy_lock(&locker2);
     return (0);
 }
