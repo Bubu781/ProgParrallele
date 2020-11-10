@@ -1,0 +1,12 @@
+Q3
+Les fonctions qui prennent le plus de temps ? Aucune idée et chiant à checker
+CEPENDANT
+On peut paralleliser join pour que tag1 et tag2 soient faits en simultané
+éventuellement ccl_temp_tag vu qu'on fait pixel par pixel, pas sûr que ce soit le plus long
+petit for pour ccl_reduce_equivalence, pas forcément necessaire de //
+ccl_retag il dit de //, y a un for chaque pixel
+pareil pour ccl_analyze
+pareil pour ccl_draw_colors
+On pourrait le faire pour ccl_draw_bounding_boxes, de plus on pourrait faire tourner x et y en simultané
+ccl_draw_legend ne semble pas en avoir besoin
+image_connected_components peut être pas non plus
