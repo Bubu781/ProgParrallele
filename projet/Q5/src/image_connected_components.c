@@ -5,7 +5,7 @@
  * @version 0.1
  * @date octobre 2020
  */
-#include "image_connected_components.h"
+#include "../inc/image_connected_components.h"
 
 /**
  * @brief Assign a unique color to each tag
@@ -59,7 +59,6 @@ int join(int *table, int tag1, int tag2)
   return t_min;
 }
 
-
 /**
  * @brief Return the minimum strictly positive of two int values
  * @param a a int
@@ -92,64 +91,88 @@ int ccl_temp_tag(
 {
   assert(self && tags && equiv_out);
 
-  int x, y;
   bool bg_color;
-  int num_tags = 0;
-
+  int num_tags_ref = 0;
+  int tid, nb_threads;
   DEBUG("First step: assign temporary class tag");
 
     /* Detect background color */
   bg_color = image_bmp_getpixel(self, 0, 0).bit;
 
-  /* Loop over all image pixels */
-  for(y = 0; y < self->height; ++y)
+  #pragma omp parallel private(tid)
   {
-    for (x = 0; x < self->width; ++x)
+    tid = omp_get_thread_num();
+    nb_threads = omp_get_num_threads();
+    int x, y;
+    int num_tags = 0;
+    /* Loop over all image pixels */
+    for(y = tid; y < self->height; y+=nb_threads)
     {
-      /* read current pixel color */
-      bool pxl_color = image_bmp_getpixel(self, x, y).bit;
-      
-      /* by default, pixel tag is zero (background) */
-      int tag = 0;
-
-      if (pxl_color != bg_color) 
+      for (x = 0; x < self->width; ++x)
       {
-        /* Current pixel is foreground color: give it a tag, but which one? */
-
-        /* Read the tag (if any) of the North and West adjacent pixels */
-        /* or 0, if outside image coordinate ranges */
-        int tag_n = image_coord_check(tags, x, y-1) ? 
-              image_gs16_getpixel(tags, x, y-1).gs16 
-              : 0;
-        int tag_w = image_coord_check(tags, x-1, y) ? 
-              image_gs16_getpixel(tags, x-1, y).gs16
-              : 0;
-
-        /* Current pixel is the minimum non-zero of both tags */
-        tag = min_non_zero(tag_n, tag_w);
-
-        if (tag == 0)
-        {
-          /* adjacent pixels have not yet been tagged: create a new tag */
-          ++num_tags;
-          assert(num_tags < MAX_TAGS);
-          tag = num_tags;
-          /* new tag has no equivalence */
-          equiv_out[tag] = tag;
-        }
+        /* read current pixel color */
+        bool pxl_color = image_bmp_getpixel(self, x, y).bit;
         
-        if (tag_n > 0 && tag_w > 0 && tag_w != tag_n)
+        /* by default, pixel tag is zero (background) */
+        int tag = 0;
+
+        if (pxl_color != bg_color) 
         {
-          /* if neighbors have different tags: join them */
-          join(equiv_out, tag_n, tag_w);
+          /* Current pixel is foreground color: give it a tag, but which one? */
+
+          /* Read the tag (if any) of the North and West adjacent pixels */
+          /* or 0, if outside image coordinate ranges */
+          int tag_n = image_coord_check(tags, x, y-1) ? 
+                image_gs16_getpixel(tags, x, y-1).gs16 
+                : 0;
+          int tag_w = image_coord_check(tags, x-1, y) ? 
+                image_gs16_getpixel(tags, x-1, y).gs16
+                : 0;
+          int tag_s = image_coord_check(tags, x, y+1) ? 
+                image_gs16_getpixel(tags, x, y+1).gs16 
+                : 0;
+
+          /* Current pixel is the minimum non-zero of both tags */
+          tag = min_non_zero(min_non_zero(tag_n, tag_w), tag_s);
+
+          if (tag == 0)
+          {
+            /* adjacent pixels have not yet been tagged: create a new tag */
+            #pragma omp critical
+            {
+              num_tags = ++num_tags_ref;
+            }
+            assert(num_tags < MAX_TAGS);
+            tag = num_tags;
+            /* new tag has no equivalence */
+            equiv_out[tag] = tag;
+          }
+          else
+          {
+            if (tag_n > 0 && tag != tag_n)
+            {
+              /* if neighbors have different tags: join them */
+              join(equiv_out, tag_n, tag);
+            }
+            if (tag_s > 0 && tag != tag_s)
+            {
+              /* if neighbors have different tags: join them */
+              join(equiv_out, tag_s, tag);
+            }
+            if (tag_w > 0 && tag_w != tag)
+            {
+              /* if neighbors have different tags: join them */
+              join(equiv_out, tag, tag_w);
+            }
+          }
         }
+        /* store tag in the tags image structure */
+        image_gs16_setpixel(tags, x, y, (color_t){.gs16 = tag});
       }
-      /* store tag in the tags image structure */
-      image_gs16_setpixel(tags, x, y, (color_t){.gs16 = tag});
     }
   }
 
-  return num_tags;
+  return num_tags_ref;
 }
 
 /**
@@ -191,19 +214,26 @@ int ccl_reduce_equivalences(
  */
 void ccl_retag(image_t *tags, int *class_num)
 {
-  int x, y, t;
-  /* Replace temporay class tags by their renumbered class root */
-  for (y = 0; y < tags->height; ++y)
+  int tid, nb_threads;
+  #pragma omp parallel private(tid)
   {
-    for (x = 0; x < tags->width; ++x)
+    int x, y, t;
+    tid = omp_get_thread_num();
+    nb_threads = omp_get_num_threads();
+    //Chaque thread s'occupe d'une partie de la boucle for
+    /* Replace temporay class tags by their renumbered class root */
+    for (y = tid; y < tags->height; y+= nb_threads)
     {
-      /* initial pixel tag */
-      t = image_gs16_getpixel(tags, x, y).gs16;
-      if (t != 0) 
+      for (x = 0; x < tags->width; ++x)
       {
-        /* get connected component number from tag */
-        t = class_num[t];
-        image_gs16_setpixel(tags, x, y, (color_t){.gs16 = t});
+        /* initial pixel tag */
+        t = image_gs16_getpixel(tags, x, y).gs16;
+        if (t != 0) 
+        {
+          /* get connected component number from tag */
+          t = class_num[t];
+          image_gs16_setpixel(tags, x, y, (color_t){.gs16 = t});
+        }
       }
     }
   }
@@ -220,9 +250,8 @@ void ccl_analyze(
       image_connected_component_t *con_cmp, 
       int num_classes)
 {
-  int x, y, t;
-
-  for (t = 0; t < num_classes; ++t)
+  int tid, nb_threads;
+  for (int t = 0; t < num_classes; ++t)
   {
     con_cmp[t] = (image_connected_component_t){
           .num_pixels = 0,
@@ -232,21 +261,27 @@ void ccl_analyze(
           .y2 = 0
         };
   }
-
-  for (y = 0; y < tags->height; ++y)
+  #pragma omp parallel private(tid)
   {
-    for (x = 0; x < tags->width; ++x)
+    int x, y, t;
+    tid = omp_get_thread_num();
+    nb_threads = omp_get_num_threads();
+    //Chaque thread s'occupe d'une partie de la boucle for
+    for (y = tid; y < tags->height; y+=nb_threads)
     {
-      t = image_gs16_getpixel(tags, x, y).gs16;
-      if (t > 0)
+      for (x = 0; x < tags->width; ++x)
       {
-        assert(t <= num_classes);
-        /* compute size and bounding box of connected component */
-        con_cmp[t-1].num_pixels++;
-        con_cmp[t-1].x1 = MIN(con_cmp[t-1].x1, x);
-        con_cmp[t-1].y1 = MIN(con_cmp[t-1].y1, y);
-        con_cmp[t-1].x2 = MAX(con_cmp[t-1].x2, x);
-        con_cmp[t-1].y2 = MAX(con_cmp[t-1].y2, y);
+        t = image_gs16_getpixel(tags, x, y).gs16;
+        if (t > 0)
+        {
+          assert(t <= num_classes);
+          /* compute size and bounding box of connected component */
+          con_cmp[t-1].num_pixels++;
+          con_cmp[t-1].x1 = MIN(con_cmp[t-1].x1, x);
+          con_cmp[t-1].y1 = MIN(con_cmp[t-1].y1, y);
+          con_cmp[t-1].x2 = MAX(con_cmp[t-1].x2, x);
+          con_cmp[t-1].y2 = MAX(con_cmp[t-1].y2, y);
+        }
       }
     }
   }
@@ -259,16 +294,23 @@ void ccl_analyze(
  */
 void ccl_draw_colors(const image_t *tags, image_t *color)
 {
-  int x, y, t;
+  int tid, nb_threads;
   assert(tags && color);
-  for (y = 0; y < tags->height; ++y)
+  #pragma omp parallel private(tid)
   {
-    for (x = 0; x < tags->width; ++x)
+    int x, y, t;
+    tid = omp_get_thread_num();
+    nb_threads = omp_get_num_threads();
+    //Chaque thread s'occupe d'une partie de la boucle for
+    for (y = tid; y < tags->height; y += nb_threads)
     {
-      t = image_gs16_getpixel(tags, x, y).gs16;
-      if (t != 0)
+      for (x = 0; x < tags->width; ++x)
       {
-        image_rgb_setpixel(color, x, y, class_color(t-1));
+        t = image_gs16_getpixel(tags, x, y).gs16;
+        if (t != 0)
+        {
+          image_rgb_setpixel(color, x, y, class_color(t-1));
+        }
       }
     }
   }

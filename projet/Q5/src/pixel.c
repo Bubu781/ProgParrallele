@@ -5,8 +5,8 @@
  * @version 0.1
  * @date october 2020
  */
-#include "pixel.h"
-#include "utils.h"
+#include "../inc/pixel.h"
+#include "../inc/utils.h"
 #include <math.h>
 
 /**

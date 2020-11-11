@@ -7,7 +7,7 @@
  * @version 0.1
  * @date octobre 2020
  */
-
+#include <omp.h>
 #include "image_lib.h"
 
 #define MAX_TAGS 500000

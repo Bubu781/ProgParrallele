@@ -8,7 +8,7 @@
  * @date october 2020
  */
 
-#include <image.h>
+#include "image.h"
 
 image_t *image_new_open(const char *fname);
 int image_save_ascii(const image_t *self, const char *fname);
