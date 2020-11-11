@@ -6,8 +6,8 @@
  * @date october 2020
  */
 
-#include "image.h"
-#include "utils.h"
+#include "../inc/image.h"
+#include "../inc/utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
